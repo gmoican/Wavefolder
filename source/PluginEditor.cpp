@@ -5,17 +5,19 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
       processorRef (p)
 {
     juce::ignoreUnused (processorRef);
-    // juce::LookAndFeel::setDefaultLookAndFeel(&myCustomLnF);
+    juce::LookAndFeel::setDefaultLookAndFeel(&myCustomLnF);
     
     // --- LAYOUT ---
-    header.setColour (juce::TextButton::buttonColourId, UIConstants::background.brighter(0.5f)
+    header.setColour (juce::TextButton::buttonColourId, punk_dsp::UIConstants::background.brighter(0.5f)
                                                                                .withAlpha(0.25f)
                       );
     header.setEnabled(false);
+    header.setColour(juce::TextButton::textColourOffId, punk_dsp::UIConstants::highlight);
+    header.setColour(juce::TextButton::textColourOnId, punk_dsp::UIConstants::highlight);
     header.setButtonText ("Punk DSP - Wavefolder");
     addAndMakeVisible (header);
     
-    params.setColour (juce::TextButton::buttonColourId, UIConstants::background.brighter(0.5f)
+    params.setColour (juce::TextButton::buttonColourId, punk_dsp::UIConstants::background.brighter(0.5f)
                                                                                .withAlpha(0.25f)
                       );
     params.setEnabled(false);
@@ -55,7 +57,7 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
     biasPreSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     biasPreSlider.setRange(Parameters::biasMin, Parameters::biasMax, 0.01);
     biasPreSlider.setValue(Parameters::biasDefault);
-    biasPreSlider.setName("Bias (pre)");
+    biasPreSlider.setName(u8"β\u2080");
     addAndMakeVisible(biasPreSlider);
     
     biasPreAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::biasPreId, biasPreSlider);
@@ -65,7 +67,7 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
     biasPostSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     biasPostSlider.setRange(Parameters::biasMin, Parameters::biasMax, 0.01);
     biasPostSlider.setValue(Parameters::biasDefault);
-    biasPostSlider.setName("Bias (post)");
+    biasPostSlider.setName(u8"β\u2081");
     addAndMakeVisible(biasPostSlider);
     
     biasPostAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::biasPostId, biasPostSlider);
@@ -75,7 +77,7 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
     thresSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     thresSlider.setRange(Parameters::thresMin, Parameters::thresMax, 0.01);
     thresSlider.setValue(Parameters::thresDefault);
-    thresSlider.setName("Threshold");
+    thresSlider.setName("Thres");
     addAndMakeVisible(thresSlider);
     
     thresAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::thresId, thresSlider);
@@ -90,7 +92,14 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
     
     mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::mixId, mixSlider);
     
-    setSize (330, 350);
+    // Sizing calculations
+    const int numCols = 3;
+    const int numRows = 2;
+
+    const int totalWidth = (numCols * (punk_dsp::UIConstants::knobSize + 2 * punk_dsp::UIConstants::margin)) + (10 * 2);
+    const int totalHeight = punk_dsp::UIConstants::headerHeight + punk_dsp::UIConstants::comboboxHeight + 2 * punk_dsp::UIConstants::margin + (numRows * (punk_dsp::UIConstants::knobSize + 2 * punk_dsp::UIConstants::margin)) + (10 * 2);
+    
+    setSize (totalWidth, totalHeight);
 }
 
 PluginEditor::~PluginEditor()
@@ -101,7 +110,7 @@ PluginEditor::~PluginEditor()
 void PluginEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (UIConstants::background);
+    g.fillAll (punk_dsp::UIConstants::background);
 }
 
 void PluginEditor::resized()
@@ -110,36 +119,44 @@ void PluginEditor::resized()
     auto area = getLocalBounds();
     
     // --- LAYOUT SETUP ---
-    auto headerArea = area.removeFromTop( 30 );
+    auto headerArea = area.removeFromTop( punk_dsp::UIConstants::headerHeight );
     auto paramsArea = area.reduced( 10 );
     
     header.setBounds(headerArea);
     params.setBounds(paramsArea);
     
-    // --- PARAMS LAYOUT ---
-    auto paramsBounds = params.getBounds().reduced(UIConstants::margin);
+    // Flexbox for sliders
+    juce::FlexBox fb;
+    fb.flexDirection = juce::FlexBox::Direction::row;
+    fb.flexWrap = juce::FlexBox::Wrap::wrap;
+    fb.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
+    fb.alignContent = juce::FlexBox::AlignContent::spaceBetween;
     
-    // Position the ComboBox
-    auto comboBoxArea = paramsBounds.removeFromTop(30);
-    wfComboBox.setBounds(comboBoxArea);
+    // Add components to the FlexBox
+    fb.items.add(juce::FlexItem(wfComboBox).withMinWidth(paramsArea.getWidth() - 2 * punk_dsp::UIConstants::margin)
+                                            .withMinHeight(punk_dsp::UIConstants::comboboxHeight)
+                                            .withMargin(punk_dsp::UIConstants::margin));
     
-    // First row: 3 sliders
-    auto row1 = paramsBounds.removeFromTop(UIConstants::knobSize + UIConstants::margin);
-    driveSlider.setBounds(row1.removeFromLeft(UIConstants::knobSize));
-    row1.removeFromLeft(UIConstants::margin);
-    outGainSlider.setBounds(row1.removeFromLeft(UIConstants::knobSize));
-    row1.removeFromLeft(UIConstants::margin);
-    mixSlider.setBounds(row1.removeFromLeft(UIConstants::knobSize));
+    fb.items.add(juce::FlexItem(driveSlider).withMinWidth(punk_dsp::UIConstants::knobSize)
+                                            .withMinHeight(punk_dsp::UIConstants::knobSize)
+                                            .withMargin(punk_dsp::UIConstants::margin));
+    fb.items.add(juce::FlexItem(outGainSlider).withMinWidth(punk_dsp::UIConstants::knobSize)
+                                              .withMinHeight(punk_dsp::UIConstants::knobSize)
+                                              .withMargin(punk_dsp::UIConstants::margin));
+    fb.items.add(juce::FlexItem(mixSlider).withMinWidth(punk_dsp::UIConstants::knobSize)
+                                          .withMinHeight(punk_dsp::UIConstants::knobSize)
+                                          .withMargin(punk_dsp::UIConstants::margin));
     
-    paramsBounds.removeFromTop(UIConstants::margin);
+    fb.items.add(juce::FlexItem(biasPreSlider).withMinWidth(punk_dsp::UIConstants::knobSize)
+                                              .withMinHeight(punk_dsp::UIConstants::knobSize)
+                                              .withMargin(punk_dsp::UIConstants::margin));
+    fb.items.add(juce::FlexItem(biasPostSlider).withMinWidth(punk_dsp::UIConstants::knobSize)
+                                               .withMinHeight(punk_dsp::UIConstants::knobSize)
+                                               .withMargin(punk_dsp::UIConstants::margin));
+    fb.items.add(juce::FlexItem(thresSlider).withMinWidth(punk_dsp::UIConstants::knobSize)
+                                            .withMinHeight(punk_dsp::UIConstants::knobSize)
+                                            .withMargin(punk_dsp::UIConstants::margin));
     
-    // Second row: 3 sliders
-    auto row2 = paramsBounds.removeFromTop(UIConstants::knobSize + UIConstants::margin);
-    biasPreSlider.setBounds(row2.removeFromLeft(UIConstants::knobSize));
-    row2.removeFromLeft(UIConstants::margin);
-    biasPostSlider.setBounds(row2.removeFromLeft(UIConstants::knobSize));
-    row2.removeFromLeft(UIConstants::margin);
-    thresSlider.setBounds(row2.removeFromLeft(UIConstants::knobSize));
-    
-    paramsBounds.removeFromTop(UIConstants::margin);
+    // Perform the layout
+    fb.performLayout(paramsArea);
 }
