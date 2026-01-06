@@ -2,7 +2,7 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-WaveshaperProcessor::WaveshaperProcessor()
+WavefolderProcessor::WavefolderProcessor()
 : AudioProcessor (BusesProperties()
 #if ! JucePlugin_IsMidiEffect
 #if ! JucePlugin_IsSynth
@@ -14,17 +14,17 @@ WaveshaperProcessor::WaveshaperProcessor()
 {
 }
 
-WaveshaperProcessor::~WaveshaperProcessor()
+WavefolderProcessor::~WavefolderProcessor()
 {
 }
 
 //==============================================================================
-const juce::String WaveshaperProcessor::getName() const
+const juce::String WavefolderProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool WaveshaperProcessor::acceptsMidi() const
+bool WavefolderProcessor::acceptsMidi() const
 {
 #if JucePlugin_WantsMidiInput
     return true;
@@ -33,7 +33,7 @@ bool WaveshaperProcessor::acceptsMidi() const
 #endif
 }
 
-bool WaveshaperProcessor::producesMidi() const
+bool WavefolderProcessor::producesMidi() const
 {
 #if JucePlugin_ProducesMidiOutput
     return true;
@@ -42,7 +42,7 @@ bool WaveshaperProcessor::producesMidi() const
 #endif
 }
 
-bool WaveshaperProcessor::isMidiEffect() const
+bool WavefolderProcessor::isMidiEffect() const
 {
 #if JucePlugin_IsMidiEffect
     return true;
@@ -51,40 +51,40 @@ bool WaveshaperProcessor::isMidiEffect() const
 #endif
 }
 
-double WaveshaperProcessor::getTailLengthSeconds() const
+double WavefolderProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int WaveshaperProcessor::getNumPrograms()
+int WavefolderProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
     // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int WaveshaperProcessor::getCurrentProgram()
+int WavefolderProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void WaveshaperProcessor::setCurrentProgram (int index)
+void WavefolderProcessor::setCurrentProgram (int index)
 {
     juce::ignoreUnused (index);
 }
 
-const juce::String WaveshaperProcessor::getProgramName (int index)
+const juce::String WavefolderProcessor::getProgramName (int index)
 {
     juce::ignoreUnused (index);
     return {};
 }
 
-void WaveshaperProcessor::changeProgramName (int index, const juce::String& newName)
+void WavefolderProcessor::changeProgramName (int index, const juce::String& newName)
 {
     juce::ignoreUnused (index, newName);
 }
 
 // =========== PARAMETER LAYOUT ====================
-juce::AudioProcessorValueTreeState::ParameterLayout WaveshaperProcessor::createParams()
+juce::AudioProcessorValueTreeState::ParameterLayout WavefolderProcessor::createParams()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     
@@ -106,100 +106,59 @@ juce::AudioProcessorValueTreeState::ParameterLayout WaveshaperProcessor::createP
                                                            )
                );
     
-    // Bias (Pre in-gain)
+    // Bias
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::preBiasId,
-                                                           Parameters::preBiasName,
+                                                           Parameters::biasId,
+                                                           Parameters::biasName,
                                                            juce::NormalisableRange<float>(Parameters::biasMin, Parameters::biasMax, 0.01f),
                                                            Parameters::biasDefault
                                                            )
                );
     
-    // Bias (Post in-gain)
+    // Fold limit threshold
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::postBiasId,
-                                                           Parameters::postBiasName,
-                                                           juce::NormalisableRange<float>(Parameters::biasMin, Parameters::biasMax, 0.01f),
-                                                           Parameters::biasDefault
+                                                           Parameters::thresId,
+                                                           Parameters::thresName,
+                                                           juce::NormalisableRange<float>(Parameters::thresMin, Parameters::thresMax, 0.01f),
+                                                           Parameters::thresDefault
                                                            )
                );
     
-    // Positive Denominator Coefficient
+    // Symmetry
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::coeffPosId,
-                                                           Parameters::coeffPosName,
-                                                           juce::NormalisableRange<float>(Parameters::coeffMin, Parameters::coeffMax, 0.01f),
-                                                           Parameters::coeffDefault
+                                                           Parameters::symmetryId,
+                                                           Parameters::symmetryName,
+                                                           juce::NormalisableRange<float>(Parameters::symmetryMin, Parameters::symmetryMax, 0.01f),
+                                                           Parameters::symmetryDefault
                                                            )
                );
     
-    // Negative Denominator Coefficient
+    // Mix (%)
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::coeffNegId,
-                                                           Parameters::coeffNegName,
-                                                           juce::NormalisableRange<float>(Parameters::coeffMin, Parameters::coeffMax, 0.01f),
-                                                           Parameters::coeffDefault
+                                                           Parameters::mixId,
+                                                           Parameters::mixName,
+                                                           juce::NormalisableRange<float>(Parameters::mixMin, Parameters::mixMax, 0.1f),
+                                                           Parameters::mixDefault
                                                            )
-               );
-    
-    // Sag Time (ms)
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::sagTimeId,
-                                                           Parameters::sagTimeName,
-                                                           juce::NormalisableRange<float>(Parameters::sagTimeMin, Parameters::sagTimeMax, 0.1f),
-                                                           Parameters::sagTimeDefault
-                                                           )
-               );
-    
-    // Harmonics Gain (%)
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::harmonicsGainId,
-                                                           Parameters::harmonicsGainName,
-                                                           juce::NormalisableRange<float>(Parameters::harmonicsGainMin, Parameters::harmonicsGainMax, 0.1f),
-                                                           Parameters::harmonicsGainDefault
-                                                           )
-               );
-    
-    // Harmonics Balance
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::harmonicsBalanceId,
-                                                           Parameters::harmonicsBalanceName,
-                                                           juce::NormalisableRange<float>(Parameters::harmonicsBalanceMin, Parameters::harmonicsBalanceMax, 0.01f),
-                                                           Parameters::harmonicsBalanceDefault
-                                                           )
-               );
-    
-    // Harmonics Sidechain
-    layout.add(std::make_unique<juce::AudioParameterBool>(
-                                                          Parameters::harmonicsSidechainId,
-                                                          Parameters::harmonicsSidechainName,
-                                                          Parameters::harmonicsSidechainDefault
-                                                          )
                );
     
     return layout;
 }
 
 //==============================================================================
-void WaveshaperProcessor::updateParameters()
+void WavefolderProcessor::updateParameters()
 {
-    tube.setDrive( juce::Decibels::decibelsToGain( apvts.getRawParameterValue(Parameters::driveId)->load() ) );
-    tube.setOutGain( juce::Decibels::decibelsToGain( apvts.getRawParameterValue(Parameters::outGainId)->load() ) );
+    wf.setDrive( juce::Decibels::decibelsToGain( apvts.getRawParameterValue(Parameters::driveId)->load() ) );
+    wf.setOutGain( juce::Decibels::decibelsToGain( apvts.getRawParameterValue(Parameters::outGainId)->load() ) );
     
-    tube.setBiasPre( apvts.getRawParameterValue(Parameters::preBiasId)->load() );
-    tube.setBiasPost( apvts.getRawParameterValue(Parameters::postBiasId)->load() );
+    wf.setBias( apvts.getRawParameterValue(Parameters::biasId)->load() );
+    wf.setSymmetry( apvts.getRawParameterValue(Parameters::symmetryId)->load() );
     
-    tube.setCoeffPos( apvts.getRawParameterValue(Parameters::coeffPosId)->load() );
-    tube.setCoeffNeg( apvts.getRawParameterValue(Parameters::coeffNegId)->load() );
-    
-    tube.setSagTime( apvts.getRawParameterValue(Parameters::sagTimeId)->load() );
-    
-    tube.setHarmonicGain( apvts.getRawParameterValue(Parameters::harmonicsGainId)->load() / 100.f);
-    tube.setHarmonicBalance( apvts.getRawParameterValue(Parameters::harmonicsBalanceId)->load() );
-    tube.setHarmonicSidechain( (bool) apvts.getRawParameterValue(Parameters::harmonicsSidechainId)->load() );
+    wf.setThreshold( apvts.getRawParameterValue(Parameters::thresId)->load() );
+    wf.setMix( apvts.getRawParameterValue(Parameters::mixId)->load() / 100.0f);
 }
 
-void WaveshaperProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void WavefolderProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // juce::dsp::ProcessSpec spec;
     // spec.maximumBlockSize = samplesPerBlock;
@@ -211,13 +170,13 @@ void WaveshaperProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     updateParameters();
 }
 
-void WaveshaperProcessor::releaseResources()
+void WavefolderProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
-bool WaveshaperProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool WavefolderProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
 #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -239,7 +198,7 @@ bool WaveshaperProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 #endif
 }
 
-void WaveshaperProcessor::processBlock (juce::AudioBuffer<float>& buffer,
+void WavefolderProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                      juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused (midiMessages);
@@ -256,23 +215,23 @@ void WaveshaperProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     updateParameters();
     
     // Process
-    tube.processBuffer(buffer);
+    wf.processBuffer(buffer);
 }
 
 //==============================================================================
-bool WaveshaperProcessor::hasEditor() const
+bool WavefolderProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* WaveshaperProcessor::createEditor()
+juce::AudioProcessorEditor* WavefolderProcessor::createEditor()
 {
-    return new PluginEditor (*this);
-    // return new juce::GenericAudioProcessorEditor (*this);
+    // return new PluginEditor (*this);
+    return new juce::GenericAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void WaveshaperProcessor::getStateInformation (juce::MemoryBlock& destData)
+void WavefolderProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
@@ -280,7 +239,7 @@ void WaveshaperProcessor::getStateInformation (juce::MemoryBlock& destData)
     juce::ignoreUnused (destData);
 }
 
-void WaveshaperProcessor::setStateInformation (const void* data, int sizeInBytes)
+void WavefolderProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
@@ -291,5 +250,5 @@ void WaveshaperProcessor::setStateInformation (const void* data, int sizeInBytes
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new WaveshaperProcessor();
+    return new WavefolderProcessor();
 }

@@ -23,56 +23,40 @@ namespace Parameters
     constexpr auto outGainMin = -30.0f;
     constexpr auto outGainMax = 30.0f;
 
-    // Bias (Pre in-gain) & (Post in-gain)
-    constexpr auto preBiasId = "biasPre";
-    constexpr auto preBiasName = "Bias (Pre)";
-    constexpr auto postBiasId = "biasPost";
-    constexpr auto postBiasName = "Bias (Post)";
+    // Bias
+    constexpr auto biasId = "biasPre";
+    constexpr auto biasName = "Bias";
     constexpr auto biasDefault = 0.0f;
     constexpr auto biasMin = -1.0f;
     constexpr auto biasMax = 1.0f;
 
-    // Denominator coefficients (Positive-side & Negative-side)
-    constexpr auto coeffPosId = "coeffPos";
-    constexpr auto coeffPosName = "Coeff (Pos)";
-    constexpr auto coeffNegId = "coeffNeg";
-    constexpr auto coeffNegName = "Coeff (Neg)";
-    constexpr auto coeffDefault = 1.0f;
-    constexpr auto coeffMin = 0.0f;
-    constexpr auto coeffMax = 5.0f;
+    // Fold limit threshold
+    constexpr auto thresId = "thres";
+    constexpr auto thresName = "Threshold";
+    constexpr auto thresDefault = 0.7f;
+    constexpr auto thresMin = 0.05f;
+    constexpr auto thresMax = 1.0f;
 
-    // Sag Time
-    constexpr auto sagTimeId = "sag";
-    constexpr auto sagTimeName = "Sag Time (ms)";
-    constexpr auto sagTimeDefault = 100.0f;
-    constexpr auto sagTimeMin = 0.1f;
-    constexpr auto sagTimeMax = 100.0f;
+    // Simmetry
+    constexpr auto symmetryId = "symmetry";
+    constexpr auto symmetryName = "Symmetry";
+    constexpr auto symmetryDefault = 100.0f;
+    constexpr auto symmetryMin = -1.0f;
+    constexpr auto symmetryMax = 1.0f;
 
-    // Harmonics Gain
-    constexpr auto harmonicsGainId = "harmGain";
-    constexpr auto harmonicsGainName = "Extra Harmonics (%)";
-    constexpr auto harmonicsGainDefault = 5.0f;
-    constexpr auto harmonicsGainMin = 0.0f;
-    constexpr auto harmonicsGainMax = 50.0f;
-
-    // Harmonics Balance
-    constexpr auto harmonicsBalanceId = "harmBalance";
-    constexpr auto harmonicsBalanceName = "Harmonics Balance";
-    constexpr auto harmonicsBalanceDefault = 0.5f;
-    constexpr auto harmonicsBalanceMin = 0.0f;
-    constexpr auto harmonicsBalanceMax = 1.0f;
-
-    // Harmonics Sidechain
-    constexpr auto harmonicsSidechainId = "harmSidechain";
-    constexpr auto harmonicsSidechainName = "Harmonics Sidechain";
-    constexpr auto harmonicsSidechainDefault = true;
+    // Mix (%)
+    constexpr auto mixId = "mix";
+    constexpr auto mixName = "Mix (%)";
+    constexpr auto mixDefault = 5.0f;
+    constexpr auto mixMin = 0.0f;
+    constexpr auto mixMax = 100.0f;
 }
 
-class WaveshaperProcessor : public juce::AudioProcessor
+class WavefolderProcessor : public juce::AudioProcessor
 {
 public:
-    WaveshaperProcessor();
-    ~WaveshaperProcessor() override;
+    WavefolderProcessor();
+    ~WavefolderProcessor() override;
 
     // DEFAULT STUFF ===============================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -109,8 +93,8 @@ public:
 private:
     juce::AudioProcessorValueTreeState::ParameterLayout createParams();
     
-    punk_dsp::TubeModel tube;
+    punk_dsp::Wavefolder wf;
     
     // =============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WaveshaperProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WavefolderProcessor)
 };

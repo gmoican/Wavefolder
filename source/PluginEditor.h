@@ -20,7 +20,7 @@ const int margin = 20;
 class PluginEditor : public juce::AudioProcessorEditor
 {
 public:
-    explicit PluginEditor (WaveshaperProcessor&);
+    explicit PluginEditor (WavefolderProcessor&);
     ~PluginEditor() override;
 
     //==============================================================================
@@ -30,7 +30,7 @@ public:
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    WaveshaperProcessor& processorRef;
+    WavefolderProcessor& processorRef;
     
     // Custom Look and Feel
     // punk_dsp::ExamplesLnF myCustomLnF;

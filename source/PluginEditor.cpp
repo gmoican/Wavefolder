@@ -1,6 +1,6 @@
 #include "PluginEditor.h"
 
-PluginEditor::PluginEditor (WaveshaperProcessor& p)
+PluginEditor::PluginEditor (WavefolderProcessor& p)
     : AudioProcessorEditor (&p),
       processorRef (p)
 {
