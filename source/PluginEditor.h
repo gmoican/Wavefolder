@@ -39,13 +39,13 @@ private:
     juce::TextButton header, params;
     
     // Sliders - Rotary knobs
-    juce::Slider driveSlider, outGainSlider, biasPreSlider, biasPostSlider, coeffPosSlider, coeffNegSlider, sagTimeSlider, harmGainSlider, harmBalanceSlider;
-    juce::TextButton harmSCButton;
+    juce::Slider driveSlider, outGainSlider, biasPreSlider, biasPostSlider, thresSlider, mixSlider;
+    juce::ComboBox wfComboBox;
         
     // Attachments for linking sliders-parameters
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> driveAttachment, outGainAttachment, biasPreAttachment, biasPostAttachment, coeffPosAttachment, coeffNegAttachment, sagTimeAttachment, harmGainAttachment, harmBalanceAttachment;
-    
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> harmSCAttachment;
-        
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> driveAttachment, outGainAttachment, biasPreAttachment, biasPostAttachment, thresAttachment, mixAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> wfAttachment;
+
+            
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };

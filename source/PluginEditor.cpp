@@ -12,7 +12,7 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
                                                                                .withAlpha(0.25f)
                       );
     header.setEnabled(false);
-    header.setButtonText ("Punk DSP - TubeModel");
+    header.setButtonText ("Punk DSP - Wavefolder");
     addAndMakeVisible (header);
     
     params.setColour (juce::TextButton::buttonColourId, UIConstants::background.brighter(0.5f)
@@ -20,6 +20,15 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
                       );
     params.setEnabled(false);
     addAndMakeVisible (params);
+    
+    // Waveshaper choices
+    wfComboBox.addItem("FoldToRange", 1);
+    wfComboBox.addItem("SinFold", 2);
+    wfComboBox.addItem("ComboFold", 3);
+    addAndMakeVisible(wfComboBox);
+    
+    // Attach the ComboBox to the APVTS parameter
+    wfAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(processorRef.apvts, "wavefolder", wfComboBox);
     
     // Drive
     driveSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -41,7 +50,7 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
     
     outGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::outGainId, outGainSlider);
     
-    // Bias (Pre-Drive)
+    // Bias (pre-drive)
     biasPreSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     biasPreSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     biasPreSlider.setRange(Parameters::biasMin, Parameters::biasMax, 0.01);
@@ -49,9 +58,9 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
     biasPreSlider.setName("Bias (pre)");
     addAndMakeVisible(biasPreSlider);
     
-    biasPreAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::preBiasId, biasPreSlider);
-
-    // Bias (Post-Drive)
+    biasPreAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::biasPreId, biasPreSlider);
+    
+    // Bias (post-drive)
     biasPostSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     biasPostSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     biasPostSlider.setRange(Parameters::biasMin, Parameters::biasMax, 0.01);
@@ -59,66 +68,29 @@ PluginEditor::PluginEditor (WavefolderProcessor& p)
     biasPostSlider.setName("Bias (post)");
     addAndMakeVisible(biasPostSlider);
     
-    biasPostAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::postBiasId, biasPostSlider);
+    biasPostAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::biasPostId, biasPostSlider);
+
+    // Threshold
+    thresSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    thresSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    thresSlider.setRange(Parameters::thresMin, Parameters::thresMax, 0.01);
+    thresSlider.setValue(Parameters::thresDefault);
+    thresSlider.setName("Threshold");
+    addAndMakeVisible(thresSlider);
     
-    // Positive Denominator Coefficients
-    coeffPosSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    coeffPosSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    coeffPosSlider.setRange(Parameters::coeffMin, Parameters::coeffMax, 0.01);
-    coeffPosSlider.setValue(Parameters::coeffDefault);
-    coeffPosSlider.setName("Coeff (pos)");
-    addAndMakeVisible(coeffPosSlider);
+    thresAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::thresId, thresSlider);
     
-    coeffPosAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::coeffPosId, coeffPosSlider);
+    // Mix
+    mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    mixSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    mixSlider.setRange(Parameters::mixMin, Parameters::mixMax, 0.01);
+    mixSlider.setValue(Parameters::mixDefault);
+    mixSlider.setName("Mix");
+    addAndMakeVisible(mixSlider);
     
-    // Negative Denominator Coefficients
-    coeffNegSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    coeffNegSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    coeffNegSlider.setRange(Parameters::coeffMin, Parameters::coeffMax, 0.01);
-    coeffNegSlider.setValue(Parameters::coeffDefault);
-    coeffNegSlider.setName("Coeff (neg)");
-    addAndMakeVisible(coeffNegSlider);
+    mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::mixId, mixSlider);
     
-    coeffNegAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::coeffNegId, coeffNegSlider);
-    
-    // Sag Time
-    sagTimeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    sagTimeSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    sagTimeSlider.setRange(Parameters::sagTimeMin, Parameters::sagTimeMax, 0.1);
-    sagTimeSlider.setValue(Parameters::sagTimeDefault);
-    sagTimeSlider.setName("Sag (ms)");
-    addAndMakeVisible(sagTimeSlider);
-    
-    sagTimeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::sagTimeId, sagTimeSlider);
-    
-    // Harmonic Gain (%)
-    harmGainSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    harmGainSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    harmGainSlider.setRange(Parameters::harmonicsGainMin, Parameters::harmonicsGainMax, 0.1);
-    harmGainSlider.setValue(Parameters::harmonicsGainDefault);
-    harmGainSlider.setName("Harmonics (%)");
-    addAndMakeVisible(harmGainSlider);
-    
-    harmGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::harmonicsGainId, harmGainSlider);
-    
-    // Harmonic Balance
-    harmBalanceSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    harmBalanceSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    harmBalanceSlider.setRange(Parameters::harmonicsBalanceMin, Parameters::harmonicsBalanceMax, 0.1);
-    harmBalanceSlider.setValue(Parameters::harmonicsBalanceDefault);
-    harmBalanceSlider.setName("Harmonic balance");
-    addAndMakeVisible(harmBalanceSlider);
-    
-    harmBalanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processorRef.apvts, Parameters::harmonicsBalanceId, harmBalanceSlider);
-    
-    // Harmonic Balance
-    harmSCButton.setClickingTogglesState(true);
-    harmSCButton.setName("Harmonics Sidechain");
-    addAndMakeVisible(harmSCButton);
-    
-    harmSCAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(processorRef.apvts, Parameters::harmonicsSidechainId, harmSCButton);
-    
-    setSize (540, 280);
+    setSize (330, 350);
 }
 
 PluginEditor::~PluginEditor()
@@ -147,17 +119,17 @@ void PluginEditor::resized()
     // --- PARAMS LAYOUT ---
     auto paramsBounds = params.getBounds().reduced(UIConstants::margin);
     
+    // Position the ComboBox
+    auto comboBoxArea = paramsBounds.removeFromTop(30);
+    wfComboBox.setBounds(comboBoxArea);
+    
     // First row: 3 sliders
     auto row1 = paramsBounds.removeFromTop(UIConstants::knobSize + UIConstants::margin);
     driveSlider.setBounds(row1.removeFromLeft(UIConstants::knobSize));
     row1.removeFromLeft(UIConstants::margin);
     outGainSlider.setBounds(row1.removeFromLeft(UIConstants::knobSize));
     row1.removeFromLeft(UIConstants::margin);
-    harmGainSlider.setBounds(row1.removeFromLeft(UIConstants::knobSize));
-    row1.removeFromLeft(UIConstants::margin);
-    harmBalanceSlider.setBounds(row1.removeFromLeft(UIConstants::knobSize));
-    row1.removeFromLeft(UIConstants::margin);
-    harmSCButton.setBounds(row1.removeFromLeft(UIConstants::knobSize));
+    mixSlider.setBounds(row1.removeFromLeft(UIConstants::knobSize));
     
     paramsBounds.removeFromTop(UIConstants::margin);
     
@@ -167,11 +139,7 @@ void PluginEditor::resized()
     row2.removeFromLeft(UIConstants::margin);
     biasPostSlider.setBounds(row2.removeFromLeft(UIConstants::knobSize));
     row2.removeFromLeft(UIConstants::margin);
-    coeffPosSlider.setBounds(row2.removeFromLeft(UIConstants::knobSize));
-    row2.removeFromLeft(UIConstants::margin);
-    coeffNegSlider.setBounds(row2.removeFromLeft(UIConstants::knobSize));
-    row2.removeFromLeft(UIConstants::margin);
-    sagTimeSlider.setBounds(row2.removeFromLeft(UIConstants::knobSize));
+    thresSlider.setBounds(row2.removeFromLeft(UIConstants::knobSize));
     
     paramsBounds.removeFromTop(UIConstants::margin);
 }

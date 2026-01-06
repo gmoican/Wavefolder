@@ -23,9 +23,11 @@ namespace Parameters
     constexpr auto outGainMin = -30.0f;
     constexpr auto outGainMax = 30.0f;
 
-    // Bias
-    constexpr auto biasId = "biasPre";
-    constexpr auto biasName = "Bias";
+    // Bias (pre-drive & post-drive)
+    constexpr auto biasPreId = "biasPre";
+    constexpr auto biasPreName = "Bias (pre-drive)";
+    constexpr auto biasPostId = "biasPost";
+    constexpr auto biasPostName = "Bias (post-drive)";
     constexpr auto biasDefault = 0.0f;
     constexpr auto biasMin = -1.0f;
     constexpr auto biasMax = 1.0f;
@@ -37,17 +39,10 @@ namespace Parameters
     constexpr auto thresMin = 0.05f;
     constexpr auto thresMax = 1.0f;
 
-    // Simmetry
-    constexpr auto symmetryId = "symmetry";
-    constexpr auto symmetryName = "Symmetry";
-    constexpr auto symmetryDefault = 100.0f;
-    constexpr auto symmetryMin = -1.0f;
-    constexpr auto symmetryMax = 1.0f;
-
     // Mix (%)
     constexpr auto mixId = "mix";
     constexpr auto mixName = "Mix (%)";
-    constexpr auto mixDefault = 5.0f;
+    constexpr auto mixDefault = 100.0f;
     constexpr auto mixMin = 0.0f;
     constexpr auto mixMax = 100.0f;
 }
@@ -94,6 +89,7 @@ private:
     juce::AudioProcessorValueTreeState::ParameterLayout createParams();
     
     punk_dsp::Wavefolder wf;
+    int wfType = 0; // Index for choosing wavefolder
     
     // =============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WavefolderProcessor)

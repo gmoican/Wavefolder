@@ -106,10 +106,19 @@ juce::AudioProcessorValueTreeState::ParameterLayout WavefolderProcessor::createP
                                                            )
                );
     
-    // Bias
+    // Bias (pre-drive)
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::biasId,
-                                                           Parameters::biasName,
+                                                           Parameters::biasPreId,
+                                                           Parameters::biasPreName,
+                                                           juce::NormalisableRange<float>(Parameters::biasMin, Parameters::biasMax, 0.01f),
+                                                           Parameters::biasDefault
+                                                           )
+               );
+    
+    // Bias (post-drive)
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+                                                           Parameters::biasPostId,
+                                                           Parameters::biasPostName,
                                                            juce::NormalisableRange<float>(Parameters::biasMin, Parameters::biasMax, 0.01f),
                                                            Parameters::biasDefault
                                                            )
@@ -124,14 +133,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout WavefolderProcessor::createP
                                                            )
                );
     
-    // Symmetry
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-                                                           Parameters::symmetryId,
-                                                           Parameters::symmetryName,
-                                                           juce::NormalisableRange<float>(Parameters::symmetryMin, Parameters::symmetryMax, 0.01f),
-                                                           Parameters::symmetryDefault
-                                                           )
-               );
     
     // Mix (%)
     layout.add(std::make_unique<juce::AudioParameterFloat>(
@@ -142,6 +143,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout WavefolderProcessor::createP
                                                            )
                );
     
+    // Waveshaper options
+    juce::StringArray processorChoices { "FoldToRange", "SinFold", "ComboFold" };
+    
+    layout.add (std::make_unique<juce::AudioParameterChoice>(
+                                                             "wavefolder",           // Parameter ID
+                                                             "Wavefolder Type",          // Parameter name
+                                                             processorChoices,          // Choices
+                                                             0                          // Default index
+                                                             )
+                );
+    
     return layout;
 }
 
@@ -151,11 +163,15 @@ void WavefolderProcessor::updateParameters()
     wf.setDrive( juce::Decibels::decibelsToGain( apvts.getRawParameterValue(Parameters::driveId)->load() ) );
     wf.setOutGain( juce::Decibels::decibelsToGain( apvts.getRawParameterValue(Parameters::outGainId)->load() ) );
     
-    wf.setBias( apvts.getRawParameterValue(Parameters::biasId)->load() );
-    wf.setSymmetry( apvts.getRawParameterValue(Parameters::symmetryId)->load() );
+    wf.setBiasPre( apvts.getRawParameterValue(Parameters::biasPreId)->load() );
+    wf.setBiasPost( apvts.getRawParameterValue(Parameters::biasPostId)->load() );
     
     wf.setThreshold( apvts.getRawParameterValue(Parameters::thresId)->load() );
     wf.setMix( apvts.getRawParameterValue(Parameters::mixId)->load() / 100.0f);
+    
+    // Get the current processor type
+    int typesIndex = (int) apvts.getRawParameterValue ("wavefolder")->load();
+    wfType = juce::jlimit(0, 2, typesIndex);
 }
 
 void WavefolderProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -215,7 +231,20 @@ void WavefolderProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     updateParameters();
     
     // Process
-    wf.processBuffer(buffer);
+    switch (wfType) {
+        case 0:
+            wf.foldToRangeBuffer(buffer);
+            break;
+        case 1:
+            wf.foldSinBuffer(buffer);
+            break;
+        case 2:
+            wf.comboFoldBuffer(buffer);
+            break;
+        default:
+            wf.foldToRangeBuffer(buffer);
+            break;
+    }
 }
 
 //==============================================================================
@@ -226,8 +255,8 @@ bool WavefolderProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* WavefolderProcessor::createEditor()
 {
-    // return new PluginEditor (*this);
-    return new juce::GenericAudioProcessorEditor (*this);
+    return new PluginEditor (*this);
+    // return new juce::GenericAudioProcessorEditor (*this);
 }
 
 //==============================================================================
